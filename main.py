@@ -375,6 +375,14 @@ HTML_TEMPLATE = """
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    # Inicializar el evaluador de IA al arranque
+    global evaluator
+    try:
+        from ai_evaluator import CVEvaluator
+        evaluator = CVEvaluator()
+        print("CV Evaluator inicializado correctamente")
+    except Exception as e:
+        print(f"Warning: No se pudo inicializar el evaluador de IA: {e}")
     yield
 
 
@@ -439,10 +447,13 @@ async def upload_cv(
     db.add(candidate)
     db.commit()
     db.refresh(candidate)
-    
+
     # Evaluar con IA (background)
-    asyncio.create_task(evaluate_candidate(candidate.id))
-    
+    try:
+        asyncio.create_task(evaluate_candidate(candidate.id))
+    except Exception as e:
+        print(f"Warning: No se pudo iniciar evaluacion en background: {e}")
+
     return {
         "message": "CV recibido y en proceso de evaluacion",
         "candidate_id": candidate.id,
