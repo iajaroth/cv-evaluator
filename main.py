@@ -28,6 +28,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Query, Se
 from fastapi.security import APIKeyHeader
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 
 logger.info("FastAPI importado correctamente")
 
