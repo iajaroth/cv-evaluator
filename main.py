@@ -424,41 +424,55 @@ async def upload_cv(
     - **file**: Archivo del CV (.docx, .pdf, .txt)
     - **email**: Email del candidato (opcional)
     """
-    # Validar extension
-    ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in ['.docx', '.pdf', '.txt']:
-        raise HTTPException(status_code=400, detail=f"Formato no soportado: {ext}. Use .docx, .pdf o .txt")
-    
-    # Guardar archivo
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    safe_filename = f"{timestamp}_{file.filename}"
-    file_path = os.path.join(UPLOAD_DIR, safe_filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    
-    # Crear registro en BD
-    candidate = Candidate(
-        email=email,
-        original_filename=file.filename,
-        cv_file_path=file_path,
-        received_at=datetime.utcnow()
-    )
-    db.add(candidate)
-    db.commit()
-    db.refresh(candidate)
-
-    # Evaluar con IA (background)
     try:
-        asyncio.create_task(evaluate_candidate(candidate.id))
+        # Validar extension
+        ext = os.path.splitext(file.filename)[1].lower()
+        if ext not in ['.docx', '.pdf', '.txt']:
+            raise HTTPException(status_code=400, detail=f"Formato no soportado: {ext}. Use .docx, .pdf o .txt")
+        
+        # Guardar archivo
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        safe_filename = f"{timestamp}_{file.filename}"
+        file_path = os.path.join(UPLOAD_DIR, safe_filename)
+        
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Crear registro en BD
+        candidate = Candidate(
+            email=email,
+            original_filename=file.filename,
+            cv_file_path=file_path,
+            received_at=datetime.utcnow()
+        )
+        db.add(candidate)
+        db.commit()
+        db.refresh(candidate)
+        
+        # Evaluar con IA de forma sincrona
+        try:
+            result = await evaluate_candidate(candidate.id)
+            return {
+                "message": "CV recibido y evaluado",
+                "candidate_id": candidate.id,
+                "filename": file.filename,
+                "evaluation": result
+            }
+        except Exception as eval_error:
+            print(f"Error en evaluacion: {eval_error}")
+            return {
+                "message": "CV recibido pero falló la evaluacion",
+                "candidate_id": candidate.id,
+                "filename": file.filename,
+                "error": str(eval_error)
+            }
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Warning: No se pudo iniciar evaluacion en background: {e}")
-
-    return {
-        "message": "CV recibido y en proceso de evaluacion",
-        "candidate_id": candidate.id,
-        "filename": file.filename
-    }
+        print(f"Error general en upload: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/api/candidates")
