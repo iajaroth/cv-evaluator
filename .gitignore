@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual env
+venv/
+.env
+.env.local
+
+# Base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos subidos
+uploads/
+*.docx
+*.pdf
+
+# Credenciales
+token.json
+credentials.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
