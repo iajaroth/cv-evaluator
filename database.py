@@ -55,8 +55,10 @@ class Evaluation(Base):
 
 def init_db():
     """Inicializa la base de datos y crea las tablas"""
+    # Eliminar tablas existentes y recrearlas (para SQLite local)
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
-    print("Base de datos inicializada correctamente")
+    print("Base de datos inicializada correctamente (tablas recreadas)")
 
 
 def get_db():
