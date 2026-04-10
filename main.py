@@ -2,26 +2,61 @@
 API principal - Sistema de evaluacion automatica de CVs
 """
 import os
-import json
-import shutil
-import secrets
-import asyncio
+import sys
+import logging
+from logging import basicConfig
+
+# Configurar logging ANTES de cualquier importacion
+basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(name)s] %(levelname)s: %(message)s',
+    stream=sys.stdout
+)
+logger = logging.getLogger("cv-evaluator")
+
+logger.info("Python %s", sys.version)
+logger.info("Working dir: %s", os.getcwd())
+
+from dotenv import load_dotenv
+load_dotenv()
+
 from datetime import datetime
 from typing import Optional, List
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Query, Security
 from fastapi.security import APIKeyHeader
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session
-from dotenv import load_dotenv
 
-from database import init_db, get_db, Candidate, Evaluation
-from cv_parser import parse_cv
-from ai_evaluator import CVEvaluator
+logger.info("FastAPI importado correctamente")
 
-load_dotenv()
+import json
+import shutil
+import secrets
+import asyncio
+
+# Ahora si importar dependencias
+try:
+    from database import init_db, get_db, Candidate, Evaluation, SessionLocal
+    logger.info("Database module OK")
+except Exception as e:
+    logger.error(f"Database module ERROR: {e}")
+    raise
+
+try:
+    from cv_parser import parse_cv
+    logger.info("CV parser module OK")
+except Exception as e:
+    logger.error(f"CV parser module ERROR: {e}")
+    raise
+
+try:
+    from ai_evaluator import CVEvaluator
+    logger.info("AI evaluator module OK")
+except Exception as e:
+    logger.error(f"AI evaluator module ERROR: {e}")
+    raise
 
 # ============================================
 # Configuracion
@@ -380,9 +415,13 @@ async def lifespan(app: FastAPI):
     try:
         from ai_evaluator import CVEvaluator
         evaluator = CVEvaluator()
-        print("CV Evaluator inicializado correctamente")
+        print("[STARTUP] CV Evaluator inicializado correctamente")
+    except ValueError as e:
+        print(f"[STARTUP] OPENAI_API_KEY no configurada: {e}")
+        print("[STARTUP] El sistema funcionara sin evaluacion automatica")
     except Exception as e:
-        print(f"Warning: No se pudo inicializar el evaluador de IA: {e}")
+        print(f"[STARTUP] Error inicializando evaluador: {e}")
+    print("[STARTUP] CV Evaluator API iniciado en puerto 8000")
     yield
 
 
