@@ -409,6 +409,53 @@ async def health():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
 
+@app.get("/api/debug")
+async def debug_info():
+    """Info de debug para diagnosticar problemas"""
+    import sys
+    import traceback
+    
+    info = {
+        "python_version": sys.version,
+        "evaluator_initialized": evaluator is not None,
+        "upload_dir": UPLOAD_DIR,
+        "upload_dir_exists": os.path.exists(UPLOAD_DIR),
+    }
+    
+    # Probar la base de datos
+    try:
+        db = SessionLocal()
+        from database import Candidate
+        count = db.query(Candidate).count()
+        info["db_candidates"] = count
+        db.close()
+        info["db_ok"] = True
+    except Exception as e:
+        info["db_ok"] = False
+        info["db_error"] = str(e)
+    
+    # Probar el parser
+    try:
+        from cv_parser import parse_cv
+        info["parser_ok"] = True
+    except Exception as e:
+        info["parser_ok"] = False
+        info["parser_error"] = str(e)
+    
+    # Probar el evaluador
+    try:
+        if evaluator:
+            info["evaluator_ok"] = True
+        else:
+            info["evaluator_ok"] = False
+            info["evaluator_error"] = "Not initialized"
+    except Exception as e:
+        info["evaluator_ok"] = False
+        info["evaluator_error"] = str(e)
+    
+    return info
+
+
 # ============================================
 # Endpoints de API (con auth opcional)
 # ============================================
