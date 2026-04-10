@@ -1,7 +1,7 @@
 """
 Modelos de base de datos para el sistema de evaluacion de CVs
 """
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, Text, Boolean, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from datetime import datetime
@@ -36,7 +36,7 @@ class Evaluation(Base):
     __tablename__ = "evaluations"
 
     id = Column(Integer, primary_key=True, index=True)
-    candidate_id = Column(Integer, nullable=False)
+    candidate_id = Column(Integer, ForeignKey("candidates.id"), nullable=False)
     score = Column(Float, nullable=True)  # 1-10
     summary = Column(Text, nullable=True)
     strengths = Column(Text, nullable=True)  # JSON list como string
